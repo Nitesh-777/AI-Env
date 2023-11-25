@@ -52,7 +52,7 @@ vae.load_state_dict(torch.load("vae.pth"))
 class SurvivalEnv(MujocoEnv, utils.EzPickle):
     metadata = { "render_modes": [ "human", "rgb_array", "depth_array", ], "render_fps": RENDER_FPS, }
 
-    def __init__(self, xml_file= os.getcwd() + "/assets/thingo.xml", **kwargs):
+    def __init__(self, xml_file= os.getcwd() + "/assets/final_file.xml", **kwargs):
         utils.EzPickle.__init__(**locals())
 
         self.height = HEIGHT
@@ -97,6 +97,7 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         self.helper = Helper()
 
         self.reset_model()
+
 
 
     def _set_action_space(self):
@@ -190,6 +191,7 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
 
         combined_action = np.concatenate((action, helper_action))
         self.do_simulation(combined_action*30,  self.frame_skip)
+        # self.do_simulation(action*30,  self.frame_skip)
 
 
         got_food = self.handle_food()
