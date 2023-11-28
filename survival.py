@@ -224,7 +224,6 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         #     reward = xpos_inc[0]
         self.previous_xpos = np.array(current_xpos)
 
-
         # observation
         if self.render_cameras:
             for camera in ["view"]:

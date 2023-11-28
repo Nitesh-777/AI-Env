@@ -26,5 +26,5 @@ def merge_xml_files(files, main_file):
 
     base_file.write(main_file)
 
-combine_xml_files(r"C:\Users\Nites\survivalenv-master\assets\xml_files\*.xml", r"C:\Users\Nites\survivalenv-master\assets\final_file.xml")
+merge_xml_files(r"C:\Users\Nites\survivalenv-master\assets\xml_files\*.xml", r"C:\Users\Nites\survivalenv-master\assets\final_file.xml")
 
