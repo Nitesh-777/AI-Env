@@ -30,8 +30,8 @@ def get_pose(agent_pose, other_pose):
     # print(f"final pose \n{final_pose}")
     return final_pose
 
-pose = get_pose([-1, 0, np.pi/4], [1, 0, np.pi * 0.75])
-print(pose)
+# pose = get_pose([-1, 0, np.pi/4], [1, 0, np.pi * 0.75])
+# print(pose)
 
 
 def get_pose_qpos(agent_qpos, other_qpos):
@@ -77,6 +77,17 @@ other_qpos = [ 1.00000000e+00, 0.00000000e+00,  6.99297389e-02,  3.82683432e-01,
 
 pose = get_pose_qpos(learner_qpos, other_qpos)
 print(pose)
+
+
+def new_pose(pose, distance):
+    x, y, angle = pose
+    new_x = x + np.cos(angle) * distance
+    new_y = y + np.sin(angle) * distance
+    return np.array([new_x, new_y, angle])
+
+print(new_pose(pose, 1.41421))
+
+
 
 
 def visualise(ax, pose, color, label):
