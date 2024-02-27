@@ -67,6 +67,9 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         except:
             self.render_view = False
 
+        # For testing transform poses, sets agent and helper positions
+        self.initial_pos_set = False
+
         self.right_img, self.left_img, self.top_img = None, None, None
 
         self.observation_space = spaces.Dict({
@@ -93,7 +96,7 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         # except:
         #     self.render_mode = "none"
 
-
+        # Creation of Helper object
         self.helper = Helper()
 
         self.reset_model()
@@ -152,7 +155,9 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         angle_p = random.random()*2.*np.pi
         p = [ -np.cos(angle_p)*distance_p, +np.sin(angle_p)*distance_p, 0.3]
         orientation = random.random()*2.*np.pi
+        print(p)
         self.data.joint("root").qpos[:] = p + [np.sin(orientation/2), 0, 0, np.cos(orientation/2)]
+        print(self.data.joint("root").qpos)
         return p
 
 
@@ -181,17 +186,67 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
                     self.respawn_food(food-1)
                     return True
         return False
+
+    # Placing agent & helper into test positions
+    def set_test_pos(self, agent_pos, helper_pos):
+        # Setting x and y positions of agents
+        self.data.joint("root").qpos[:2] = agent_pos
+        self.data.joint("Hroot").qpos[:2] = helper_pos
+
+        # # Setting angle of direction agents are facing
+        # # qpos[3]=0 makes angle left
+        self.data.joint("root").qpos[3] = np.sin((np.pi * 0.75) /2)
+        self.data.joint("Hroot").qpos[3] = np.sin((np.pi/4)/2)
+
+        # # qpos[6]=0 makes face right
+        self.data.joint("root").qpos[6] = np.cos((np.pi * 0.75)/2)
+        self.data.joint("Hroot").qpos[6] = np.cos((np.pi/4)/2)
+
+
+
+        # self.data.joint("root").qpos[6] = np.cos((np.pi * 0.75) / 2)
+        # self.data.joint("Hroot").qpos[6] = np.cos((np.pi * 0.25 )/ 2)
+        # print(f'Learning agent Euler angle: {dir(self.data.joint("root"))}')
+        # print(f'qvel: {self.data.joint("root").qvel}')
+        # print(f'Helper agent Euler angle: {self.data.joint("Hroot").euler}')
+
+
  
     def step(self, action):
+        # print(self.data.joint("root").qpos)
+        # print(self.data.joint("Hroot").qpos)
+
         # Uncommenting this makes the simulation real-time-ish
         # while time.time()-self._timestamp<1./RENDER_FPS:
             # time.sleep(0.002)
+
         self._timestamp = time.time()
         helper_action = self.helper.get_action(self.data)
+
+        # Setting same action as helper for test
+        action = np.array([1, 1])
+        self.set_test_pos([-1, 0], [1, 0])
+
+        # print(f'Learning Agent qpos: {self.data.joint("root").qpos}')
+        # print(f'x quaternion of learner: {self.data.body("torso").xquat}')
+        # print(f'Helper Agent qpos: {self.data.joint("Hroot").qpos}')
+        # print(f'x quaternion of helper: {self.data.body("Htorso").xquat}')
+
+        # print(f'euler of beak{dir(self.data.geom("beak"))}')
+
+        # print(action)
+        # print(helper_action)
+        # agent_xmat, helper_xmat = self.data.body("torso").xmat, self.data.body("Htorso").xmat
+        # helper_pose = get_pose_xmat(agent_xmat, helper_xmat)
+        # print(helper_pose)
+
 
         combined_action = np.concatenate((action, helper_action))
         self.do_simulation(combined_action*30,  self.frame_skip)
         # self.do_simulation(action*30,  self.frame_skip)
+
+        # self.set_test_pos([-1, 0], [1, 0])
+
 
 
         got_food = self.handle_food()
@@ -267,7 +322,7 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         accelerometer = 3
         magnetometer = 3
         joint_pos_offset = 0
-        joint_vel_offset = joint_pos_offset + 0#NUMBER_OF_JOINTS
+        joint_vel_offset = joint_pos_offset + 0 #NUMBER_OF_JOINTS
         gyro_offset = joint_vel_offset + NUMBER_OF_JOINTS
         accelerometer_offset = gyro_offset + gyro
         magnetometer_offset = accelerometer_offset + accelerometer

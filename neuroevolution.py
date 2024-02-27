@@ -73,7 +73,7 @@ def evaluate(ann, env, seed, render=False, wait_after_render=False):
 
         prev_obs = obs.clone()
         obs, reward, done, _, _ = env.step(action)
-        print(obs.keys())
+        # print(obs.keys())
         obs = preprocess_observation(obs)
         total_reward += reward
         if done:
@@ -199,6 +199,12 @@ if __name__ == '__main__':
     ann = NeuralNetwork(obs.shape[0] * 2, n_joints)
     print(f'NN {obs.shape[0] * 2} {n_joints}')
 
+    # Initial testing positions for transform pose
+    # agent_pos = [-1, 0]
+    # helper_pos = [1, 0]
+    # # Setting the initial testing postions
+    # env.set_test_pos(agent_pos, helper_pos)
+
     if len(sys.argv) > 2 and sys.argv[1] == '-test':
         env.render_mode = "human"
         ann.load_state_dict(torch.load(sys.argv[2]))
@@ -212,6 +218,9 @@ if __name__ == '__main__':
     else:
         # while not os.path.exists("start"):
         # time.sleep(1)
+
+        # while not env.done:
+        #     observation, reward, done, info = env.step(action=)
 
         if not os.path.isdir(SAVE_PATH):
             os.makedirs(SAVE_PATH)

@@ -162,7 +162,7 @@
 
       <site name="Himu" />
 
-      <geom name="Htorso_geom" pos="0 0 0.0" size="0.189 0.189 0.05" density="25" type="ellipsoid" rgba="0.9 0.2 0.2 1" />
+      <geom name="Htorso_geom" pos="0 0 0.0" size="0.189 0.189 0.05" density="25" type="ellipsoid" rgba="0.2 0.2 0.9 1" />
 
       <body name="Hfront_center_leg" pos="0.16 0 -0.0398">
         <geom name="Haux_1_geom" size="0.01" type="sphere" />
