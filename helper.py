@@ -1,52 +1,58 @@
 import numpy as np
-# from transform_pose import get_pose
+import pytransform3d.rotations as pr
+from movement_avoidance import attract, repulse, resultant, angle_to_wheel
+from transform_pose import get_pose_qpos,new_pose
 
 class Helper(object):
     def __init__(self):
         pass
     def get_action(self, data):
-        agent_quat = data.body("torso").xquat
-        agent_matrix = data.body("torso").xmat
-        helper_quat = data.body("Htorso").xquat
-        helper_matrix = data.body("Htorso").xmat
+        obstacles_qpos = []
+        for i in range(1 , 11):
+            food = 'food_free_' + str(i)
+            obstacles_qpos.append(data.joint(food).qpos)
+        # print("OBSTACLESSSSSSSSSSSSS -----------------")
+        # print(obstacles_qpos)
+        # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        helper_qpos = data.joint('Hroot').qpos
+        learner_qpos = data.joint('root').qpos
+
+        # goal_qpos = self.food_placement_qpos(learner_qpos, helper_qpos, 1)
+
+        action = self.move_to_goal(helper_qpos, learner_qpos, obstacles_qpos, 1)
+
+        return action
+
+    def food_placement_qpos(self, learner_qpos, helper_qpos, dist):
+        pose = get_pose_qpos(learner_qpos, helper_qpos)
+        goal_pose = new_pose(pose, dist)
+        goal_qpos = learner_qpos
+        goal_qpos[:2] = goal_pose[:2]
+        goal_quat = pr.quaternion_from_angle(2, goal_pose[2])
+        goal_qpos[3:] = goal_quat
+
+        return goal_qpos
+    def move_to_goal(self, helper_qpos, goal_qpos, obstacles_qpos, max_dist, intensity=1.0):
+        attract_angle = attract(helper_qpos, goal_qpos)
+
+        comb_repulse_vector = np.array([0.0, 0.0])
+
+        for obstacle_qpos in obstacles_qpos:
+            repulse_angle, repulse_magnitude = repulse(helper_qpos, obstacle_qpos, max_dist, intensity)
+            repulse_vector = np.array(
+                [np.cos(repulse_angle) * repulse_magnitude, np.sin(repulse_angle) * repulse_magnitude])
+            comb_repulse_vector += repulse_vector
+
+        if np.linalg.norm(comb_repulse_vector) > 0:
+            comb_repulse_angle = np.arctan2(comb_repulse_vector[1], comb_repulse_vector[0])
+        else:
+            comb_repulse_angle = attract_angle
+
+        resultant_angle = resultant(attract_angle, comb_repulse_angle,
+                                                  np.linalg.norm(comb_repulse_vector))
+
+        wheel_actions = angle_to_wheel(resultant_angle)
+
+        return wheel_actions
 
 
-
-        # agent_qpos = data.joint("Hroot").qpos[:]
-        # helper_qpos = data.body("Htorso").qpos[:]
-
-        # x3 = data.body("torso").xaxis
-
-        # q = data.qpos
-        # print("AGENT -------")
-        # print(data.body("torso").xpos)
-        # print(f"x quaternion of learner: {agent_quat}")
-        # print(f"x transformation matrix of agent: {agent_matrix}")
-        # print(f"QPOS:  {agent_qpos}")
-        # print("HELPER ~~~~~~~")
-        # print(data.body("Htorso").xpos)
-
-        # print(f"x quaternion of helper: {helper_quat}")
-        # print(f"x transformation matrix of agent: {helper_matrix}")
-        # print(f"QPOS:  {helper_qpos}")
-
-        # print(f"x axis vector of agent: {x3}")
-        # print(f"q position of agent: {q}")
-        print("body(torso) -------------------------")
-        print(f"xpos: {data.body('torso').xpos}")
-        print(f"xipos: {data.body('torso').xipos}")
-        print(f"xmat: {data.body('torso').xmat}")
-        print(f"ximat: {data.body('torso').ximat}")
-        print(f"xquat: {data.body('torso').xquat}")
-        print("joint(root) #########################")
-        print(f"qpos: {data.joint('root').qpos}")
-        print(f"qvel: {data.joint('root').qvel}")
-        print(f"xanchor: {data.joint('root').xanchor}")
-        print(f"xaxis: {data.joint('root').xaxis}")
-
-
-
-        print(dir(data.body('torso')))
-        print(dir(data.joint('root')))
-        # print(dir(data.joint('root')))
-        return np.array([1, 1])
