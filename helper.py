@@ -1,7 +1,7 @@
 import numpy as np
 import pytransform3d.rotations as pr
 from movement_avoidance import attract, repulse, resultant, angle_to_wheel
-from transform_pose import get_pose_qpos,new_pose
+from transform_pose import new_pose, quat_angle
 
 class Helper(object):
     def __init__(self):
@@ -11,22 +11,23 @@ class Helper(object):
         for i in range(1 , 11):
             food = 'food_free_' + str(i)
             obstacles_qpos.append(data.joint(food).qpos)
-        # print("OBSTACLESSSSSSSSSSSSS -----------------")
-        # print(obstacles_qpos)
-        # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
         helper_qpos = data.joint('Hroot').qpos
         learner_qpos = data.joint('root').qpos
+        goal_qpos = self.food_placement_qpos(learner_qpos, 0.5)
 
-        # goal_qpos = self.food_placement_qpos(learner_qpos, helper_qpos, 1)
+        # print(f"LEARNER QPOS: {learner_qpos}")
+        # print(f"GOAL QPOS: {goal_qpos}")
 
-        action = self.move_to_goal(helper_qpos, learner_qpos, obstacles_qpos, 1)
+        action = self.move_to_goal(helper_qpos, goal_qpos, obstacles_qpos, 1)
 
         return action
 
-    def food_placement_qpos(self, learner_qpos, helper_qpos, dist):
-        pose = get_pose_qpos(learner_qpos, helper_qpos)
-        goal_pose = new_pose(pose, dist)
-        goal_qpos = learner_qpos
+    def food_placement_qpos(self, learner_qpos, dist):
+        learner_ang = quat_angle(learner_qpos[3:])
+        learner_pose = [learner_qpos[0], learner_qpos[1], learner_ang]
+        goal_pose = new_pose(learner_pose, dist)
+        goal_qpos = np.copy(learner_qpos)
         goal_qpos[:2] = goal_pose[:2]
         goal_quat = pr.quaternion_from_angle(2, goal_pose[2])
         goal_qpos[3:] = goal_quat
