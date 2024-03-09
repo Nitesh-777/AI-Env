@@ -42,16 +42,16 @@ def resultant(attract_angle, repulse_angle, repulse_magnitude, max_repulse_magni
 def angle_to_wheel(target_angle, threshold=np.radians(10)):
 
     norm_angle = (target_angle + np.pi) % (2 * np.pi) - np.pi
-
-    if abs(norm_angle) < threshold:
+    abs_error = abs(norm_angle)
+    if abs_error < threshold:
         return [1, 1]
     else:
         if norm_angle > 0:
             # Rotating towards the left
-            return [-0.5, 0.5]
+            return [-1 * abs_error, 1 * abs_error]
         else:
             # Rotating towards the right
-            return [0.5, -0.5]
+            return [1 * abs_error, -1 * abs_error]
 
 
 # agent_test_qpos = [1, 1, 0.06999969, 0.38268343, 0, 0, 0.92387953]
