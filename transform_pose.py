@@ -51,11 +51,24 @@ def get_pose_qpos(learner_qpos, other_qpos):
 # print(pose)
 
 
-def new_pose(pose, distance):
+def dist_pose(pose, distance):
     x, y, angle = pose
     new_x = x + np.cos(angle) * distance
     new_y = y + np.sin(angle) * distance
     return np.array([new_x, new_y, angle])
+
+
+def dist_qpos(qpos, dist):
+    ang = quat_angle(qpos[3:])
+    pose = [qpos[0], qpos[1], ang]
+    new_pose = dist_pose(pose, dist)
+    new_qpos = np.copy(qpos)
+    new_qpos[:2] = new_pose[:2]
+    new_quat = pr.quaternion_from_angle(2, new_pose[2])
+    new_qpos[3:] = new_quat
+
+    return new_qpos
+
 
 
 def visualise(ax, pose, color, label):
