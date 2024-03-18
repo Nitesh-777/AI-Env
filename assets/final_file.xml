@@ -77,7 +77,11 @@
       <geom rgba="1. 1. 1. 1" name="food_geom_10" type="sphere" size="0.3 0.3 0.3" density="5" contype="1" material="foodmaterial" conaffinity="1" />
       <joint name="food_free_10" type="free" armature="0" damping="0" limited="false" frictionloss="0.2" />
     </body>
-   
+
+    <body name="food_body_11" pos="10.0 0.0 10.">
+      <geom rgba="1. 1. 1. 1" name="food_geom_11" type="sphere" size="0.3 0.3 0.3" density="5" contype="1" material="foodmaterial" conaffinity="1" />
+      <joint name="food_free_11" type="free" armature="0" damping="0" limited="false" frictionloss="0.2" />
+    </body>
 
 
 
@@ -98,7 +102,7 @@
       <site name="imu" />
 
 
-      <geom name="torso_geom" pos="0 0 0.0" size="0.189 0.189 0.05" density="25" type="ellipsoid" />
+      <geom name="torso_geom" pos="0 0 0.0" size="0.189 0.189 0.05" density="25" type="ellipsoid" rgba="0.2 0.9 0.2 1" contype="1" conaffinity="1"/>
       
       <body name="front_center_leg" pos="0.16 0 -0.0398">
         <geom name="aux_1_geom" size="0.01" type="sphere" />
@@ -142,13 +146,7 @@
 
 
 
-
-
-
-
-
-
-  <body name="Htorso" pos="0 0 0.5">
+    <body name="Htorso" pos="0 0 0.5">
       <joint armature="0" damping="0" limited="false" margin="0.01" name="Hroot" pos="0 0 0" type="free" />
       <geom fromto="0.18 0.0 0.0  0.282 0.0 0.041" name="Hbeak" size="0.005" type="capsule" rgba="0.6 0.0 0.0 1" />
       <geom fromto="0.18 +0.01 0.0  0.28 0.0 0.04" size="0.003" type="capsule" rgba="0.6 0.0 0.0 1" />
@@ -160,9 +158,11 @@
       <geom pos="0.07 +0 0.07" name="HgviewL" size="0.01 0.03 0.03" type="box" rgba="0.14 0.14 0.14 1" />
       <geom pos="0.06 +0 0.07" name="HgviewL1" size="0.025" type="sphere" rgba="0.1 0.1 0.1 1" />
 
+      <camera name="Htop_view" mode="trackcom" pos="0 0 4" xyaxes="0 -1 0 1 0 0" />
+
       <site name="Himu" />
 
-      <geom name="Htorso_geom" pos="0 0 0.0" size="0.189 0.189 0.05" density="25" type="ellipsoid" rgba="0.2 0.2 0.9 1" />
+      <geom name="Htorso_geom" pos="0 0 0.0" size="0.189 0.189 0.05" density="25" type="ellipsoid" rgba="0.2 0.2 0.9 1" contype="1" conaffinity="1" />
 
       <body name="Hfront_center_leg" pos="0.16 0 -0.0398">
         <geom name="Haux_1_geom" size="0.01" type="sphere" />
@@ -207,7 +207,7 @@
   <actuator>
     <velocity joint="joint_bl" kv="100" ctrllimited="true" ctrlrange="-30 30" />
     <velocity joint="joint_br" kv="100" ctrllimited="true" ctrlrange="-30 30" />
-  <velocity joint="Hjoint_bl" kv="100" ctrllimited="true" ctrlrange="-30 30" />
+    <velocity joint="Hjoint_bl" kv="100" ctrllimited="true" ctrlrange="-30 30" />
     <velocity joint="Hjoint_br" kv="100" ctrllimited="true" ctrlrange="-30 30" />
   </actuator>
 
