@@ -32,7 +32,7 @@ ROBOT_SPAWN_MAX_DISTANCE = 3
 FOOD_SPAWN_MAX_DISTANCE = 10
 FOOD_SPAWN_MIN_DISTANCE = 0.2
 FOOD_DISTANCE_THRESHOLD = 0.6
-FOOD_ITEMS = 10
+FOOD_ITEMS = 10 # Changed to 11 for the Helper Food
 NUMBER_OF_JOINTS = 2
 
 INIT_HEALTH = 1000
@@ -97,7 +97,7 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         #     self.render_mode = "none"
 
         # Creation of Helper object
-        self.helper = Helper()
+        self.helper = Helper("food_free_11")
 
         self.reset_model()
 
@@ -153,7 +153,7 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
     def respawn_robot(self):
         distance_p = random.random()*ROBOT_SPAWN_MAX_DISTANCE
         angle_p = random.random()*2.*np.pi
-        p = [ -np.cos(angle_p)*distance_p, +np.sin(angle_p)*distance_p, 0.3]
+        p = [-np.cos(angle_p)*distance_p, +np.sin(angle_p)*distance_p, 0.3]
         orientation = random.random()*2.*np.pi
         print(p)
         self.data.joint("root").qpos[:] = p + [np.sin(orientation/2), 0, 0, np.cos(orientation/2)]
@@ -210,8 +210,102 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         # print(f'qvel: {self.data.joint("root").qvel}')
         # print(f'Helper agent Euler angle: {self.data.joint("Hroot").euler}')
 
+    # Gathering data to test movement avoidance methods repulse and attract
+    # Includes placing agent and food in static positions
+    def movement_avoidance_test(self):
+        # Contains the x and y coordiantes of each food
+        self.data.joint('food_free_1').qpos[:2] = [0, 4]
+        self.data.joint('food_free_2').qpos[:2] = [1.5, 4]
+        self.data.joint('food_free_3').qpos[:2] = [0, 8]
+        self.data.joint('food_free_4').qpos[:2] = [-1.5, 8]
+        self.data.joint('food_free_5').qpos[:2] = [-7, 4]
+        self.data.joint('food_free_6').qpos[:2] = [-7, 6]
+        self.data.joint('food_free_7').qpos[:2] = [-7, 8]
+        self.data.joint('food_free_8').qpos[:2] = [-7, 10]
+        self.data.joint('food_free_9').qpos[:2] = [-7, 12]
+        self.data.joint('food_free_10').qpos[:2] = [-7, 14]
+        self.data.joint('root').qpos[:2] = [0, 12]
+        self.data.joint('root').qpos[3:] = [0.38268343, 0, 0, 0.92387953]
+        self.data.joint('Hroot').qpos[:2] = [0, 0]
+        self.data.joint('Hroot').qpos[3:] = [0.70710678, 0, 0, 0.70710678]
 
- 
+    def movement_avoidance_test2(self, difficulty_level):
+        # Base positions for all levels
+        self.data.joint('root').qpos[:2] = [0, 8]
+        self.data.joint('root').qpos[3:] = [0.38268343, 0, 0, 0.92387953]
+        self.data.joint('Hroot').qpos[:2] = [0, 0]
+        self.data.joint('Hroot').qpos[3:] = [0.70710678, 0, 0, 0.70710678]
+        self.data.joint('food_free_1').qpos[:2] = [0, 4]
+        self.data.joint('food_free_2').qpos[:2] = [1.5, 4]
+        self.data.joint('food_free_3').qpos[:2] = [-1, 3]
+        self.data.joint('food_free_4').qpos[:2] = [2, 3]
+        self.data.joint('food_free_5').qpos[:2] = [-2, 2]
+        self.data.joint('food_free_6').qpos[:2] = [3, 2]
+        self.data.joint('food_free_7').qpos[:2] = [-3, 1]
+        self.data.joint('food_free_8').qpos[:2] = [4, 1]
+        self.data.joint('food_free_9').qpos[:2] = [-4, 0]  # Dead end requiring backtracking
+        self.data.joint('food_free_10').qpos[:2] = [5, 0]
+
+    def movement_avoidance_test3(self):
+        # Contains the x and y coordiantes of each food
+        self.data.joint('food_free_1').qpos[:2] = [0, 4]
+        self.data.joint('food_free_2').qpos[:2] = [1.5, 4]
+        self.data.joint('food_free_3').qpos[:2] = [-1.5, 4]
+        self.data.joint('food_free_4').qpos[:2] = [-3, 4]
+        self.data.joint('food_free_5').qpos[:2] = [-4.5, 4]
+        self.data.joint('food_free_6').qpos[:2] = [-7, 6]
+        self.data.joint('food_free_7').qpos[:2] = [-7, 8]
+        self.data.joint('food_free_8').qpos[:2] = [-7, 10]
+        self.data.joint('food_free_9').qpos[:2] = [-7, 12]
+        self.data.joint('food_free_10').qpos[:2] = [-7, 14]
+        self.data.joint('root').qpos[:2] = [0, 8]
+        self.data.joint('root').qpos[3:] = [0.38268343, 0, 0, 0.92387953]
+        self.data.joint('Hroot').qpos[:2] = [0, 0]
+        self.data.joint('Hroot').qpos[3:] = [0.70710678, 0, 0, 0.70710678]
+
+    def food_carry_test(self):
+        helper_action = self.helper.get_action(self.data, "food_free_11", [0, 10], 1000)
+        self.data.joint('root').qpos[:2] = [3, 3]
+        self.data.joint('root').qpos[3:] = [0.38268343, 0, 0, 0.92387953]
+        leaner_action = np.array([0, 0])
+        return leaner_action, helper_action
+
+    def collision_test_start(self):
+        self.data.joint('root').qpos[:2] = [2, 0]
+        self.data.joint('root').qpos[3:] = [0.38268343, 0, 0, 0.92387953]
+        self.data.joint('Hroot').qpos[:2] = [-2, 0]
+        self.data.joint('Hroot').qpos[3:] = [0.92387953, 0, 0, 0.38268343]
+        self.data.joint('food_free_1').qpos[:2] = [-7, 0]
+        self.data.joint('food_free_2').qpos[:2] = [-7, 2]
+        self.data.joint('food_free_3').qpos[:2] = [-7, 4]
+        self.data.joint('food_free_4').qpos[:2] = [-7, 6]
+        self.data.joint('food_free_5').qpos[:2] = [-7, 8]
+        self.data.joint('food_free_6').qpos[:2] = [-7, 10]
+        self.data.joint('food_free_7').qpos[:2] = [-7, 12]
+        self.data.joint('food_free_8').qpos[:2] = [-7, 14]
+        self.data.joint('food_free_9').qpos[:2] = [-7, 16]
+        self.data.joint('food_free_10').qpos[:2] = [-7, 18]
+        self.data.joint('food_free_11').qpos[:2] = [-7, 20]
+
+    def collision_test_actions(self):
+        helper_action = np.array([1, 1])
+        learner_action = np.array([1, 1])
+        return helper_action, learner_action
+
+    def helper_waiting_test_start(self):
+        self.data.joint('food_free_1').qpos[:2] = [-7, 0]
+        self.data.joint('food_free_2').qpos[:2] = [-7, 2]
+        self.data.joint('food_free_3').qpos[:2] = [-7, 4]
+        self.data.joint('food_free_4').qpos[:2] = [-7, 6]
+        self.data.joint('food_free_5').qpos[:2] = [-7, 8]
+        self.data.joint('food_free_6').qpos[:2] = [-7, 10]
+        self.data.joint('food_free_7').qpos[:2] = [-7, 12]
+        self.data.joint('food_free_8').qpos[:2] = [-7, 14]
+        self.data.joint('food_free_9').qpos[:2] = [-7, 16]
+        self.data.joint('food_free_10').qpos[:2] = [-7, 18]
+        self.data.joint('food_free_11').qpos[:2] = [-7, 20]
+
+
     def step(self, action):
         # print(self.data.joint("root").qpos)
         # print(self.data.joint("Hroot").qpos)
@@ -220,12 +314,40 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         # while time.time()-self._timestamp<1./RENDER_FPS:
             # time.sleep(0.002)
 
+        # Printing observation of env
+        # print(action)
+
+        # print(f"MODEL TORSO GEOM XPOSS{self.model.geom('torso_geom').pos}")
+        # print(f"MODEL TORSO GEOM QUAT{self.model.geom('torso_geom').quat}")
+        # print(f"DIR GEOM : {dir(self.model.geom('torso_geom'))}")
+
+        # action, helper_action = self.food_carry_test()
+        # action, helper_action = self.collision_test_actions()
+
         self._timestamp = time.time()
-        helper_action = self.helper.get_action(self.data)
+
+        # Old working code ---------------
+        # helper_action = self.helper.get_action(self.data)
+        # self.helper.carry_food(self.data, "food_free_11")
+
+
+        # New Code being tested !!!!!!!!!!!!!!!!!!!!!
+        helper_action = self.helper.get_action(self.data, [0, 10], 500)
+
+
+
+        # if not self.helper.place_food(self.data, 0.5, "food_free_11", 0.5):
+        #     self.helper.carry_food(self.data, "food_free_11")
 
         # Setting same action as helper for test
-        action = np.array([1, 1])
-        self.set_test_pos([-1, 0], [1, 0])
+        # action = np.array([1, 1])
+        #
+        # self.data.joint('root').qpos[:2] = [3, 3]
+        # self.data.joint('root').qpos[3:] = [0.38268343, 0, 0, 0.92387953]
+        # action = np.array([0, 0])
+
+        # self.set_test_pos([-1, 0], [1, 0])
+        # self.movement_avoidance_test()
 
         # print(f'Learning Agent qpos: {self.data.joint("root").qpos}')
         # print(f'x quaternion of learner: {self.data.body("torso").xquat}')
@@ -359,6 +481,13 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
 
         self.respawn_robot()
         self.respawn_all_food()
+
+        # self.movement_avoidance_test()
+        # self.movement_avoidance_test2()
+        # self.movement_avoidance_test3()
+        # self.collision_test_start()
+        # self.helper.reset()
+
         self._steps = 0
         self._done = False
         self._timestamp = time.time()
