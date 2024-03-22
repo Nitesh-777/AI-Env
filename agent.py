@@ -6,7 +6,8 @@ import numpy as np
 
 from stable_baselines3 import DDPG, TD3, PPO
 from stable_baselines3.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise
-
+import copy
+from gymnasium import spaces
 
 import cv2
 import survival
@@ -16,7 +17,7 @@ from mycallback import MyCallback, MyImageSavingCallback
 
 
 
-MODEL_TYPE = None
+MODEL_TYPE = "PPO"
 for arg in sys.argv:
     if arg.startswith("model="):
         split = arg.split('=')
@@ -46,6 +47,9 @@ n_actions = env.action_space.shape[-1]
 # action_noise = OrnsteinUhlenbeckActionNoise(mean=np.zeros(n_actions), sigma=float(0.5) * np.ones(n_actions))
 action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
 
+aspace = copy.deepcopy(env.action_space)
+env.action_space = spaces.Box(low=env.action_space.low[:-2], high=env.action_space.high[:-2], dtype=np.float32)
+
 
 if MODEL_TYPE == "DDPG":
     model = DDPG("MultiInputPolicy", env, action_noise=action_noise, verbose=1, buffer_size=1000000, tensorboard_log="runs")
@@ -56,6 +60,8 @@ elif MODEL_TYPE == "PPO":
 else:
     print("MODEL_TYPE load")
     sys.exit(1)
+
+env.action_space = aspace
 
 total_timesteps=300*100_000
 log_interval=1
