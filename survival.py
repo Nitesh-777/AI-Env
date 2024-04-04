@@ -22,6 +22,8 @@ import torch
 np.random.seed(13)
 
 from helper import Helper
+from helper2 import Helper2
+from predator import Predator
 
 WIDTH = 80
 HEIGHT = 60
@@ -98,6 +100,10 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
 
         # Creation of Helper object
         self.helper = Helper("food_free_11")
+        # self.helper = Helper2("food_free_11")
+
+        # Creation of Predator object
+        # self.predator = Predator()
 
         self.reset_model()
 
@@ -264,7 +270,7 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         self.data.joint('Hroot').qpos[3:] = [0.70710678, 0, 0, 0.70710678]
 
     def food_carry_test(self):
-        helper_action = self.helper.get_action(self.data, "food_free_11", [0, 10], 1000)
+        helper_action = self.helper.get_action(self.data, [0, 10], 500, 1, 0.25)
         self.data.joint('root').qpos[:2] = [3, 3]
         self.data.joint('root').qpos[3:] = [0.38268343, 0, 0, 0.92387953]
         leaner_action = np.array([0, 0])
@@ -305,6 +311,47 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         self.data.joint('food_free_10').qpos[:2] = [-7, 18]
         self.data.joint('food_free_11').qpos[:2] = [-7, 20]
 
+    def helper_food_eaten_test_start(self):
+        self.data.joint('Hroot').qpos[:2] = [1, 1]
+        self.data.joint('Hroot').qpos[3:] = [0.92387953, 0, 0, 0.38268343]
+        self.data.joint('root').qpos[:2] = [3, 3]
+
+
+    def helper_food_eaten_test_actions(self):
+        helper_action = self.helper.get_action(self.data, [4.5, 4.5], 500, 1.15, 0)
+        self.data.joint('root').qpos[:2] = [3, 3]
+        self.data.joint('root').qpos[3:] = [0.38268343, 0, 0, 0.92387953]
+        # leaner_action = np.array([-0.5, 0.5])
+        leaner_action = np.array([0.0, 0])
+        return leaner_action, helper_action
+
+    def helper_avoid_leaner_after_food_placed_test_start(self):
+        self.data.joint('Hroot').qpos[:2] = [1, 1]
+        self.data.joint('Hroot').qpos[3:] = [0.92387953, 0, 0, 0.38268343]
+
+
+    def helper_avoid_leaner_after_food_placed_test_actions(self):
+        helper_action = self.helper.get_action(self.data, [4.5, 3], 500, 1, 0.25)
+        self.data.joint('root').qpos[:2] = [3, 3]
+        self.data.joint('root').qpos[3:] = [0.38268343, 0, 0, 0.92387953]
+
+    def predator_test_start(self):
+        self.data.joint('Proot').qpos[:2] = [0, 0]
+        self.data.joint('Proot').qpos[3:] = [0.92387953, 0, 0, 0.38268343]
+
+
+
+    def predator_test_actions(self):
+        predator_action = self.predator.get_action(self.data)
+        self.data.joint('root').qpos[:2] = [5, 3]
+        self.data.joint('root').qpos[3:] = [1, 0, 0, 0]
+        self.data.joint('Hroot').qpos[:2] = [-10, -10]
+        self.data.joint('Hroot').qpos[3:] = [0.92387953, 0, 0, 0.38268343]
+        learner_action = np.array([0, 0])
+        helper_action = np.array([0, 0])
+        return learner_action, helper_action, predator_action
+
+
 
     def step(self, action):
         # print(self.data.joint("root").qpos)
@@ -332,7 +379,14 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
 
 
         # New Code being tested !!!!!!!!!!!!!!!!!!!!!
-        helper_action = self.helper.get_action(self.data, [0, 10], 500)
+        helper_action = self.helper.get_action(self.data, [0, 10], 500, 1, 0.25)
+
+        # action, helper_action = self.helper_food_eaten_test_actions()
+        # action, helper_action, predator_action = self.predator_test_actions()
+
+        # enable if predator being used
+        # if self.predator.attacked:
+        #     self.reset_model()
 
 
 
@@ -362,6 +416,8 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         # helper_pose = get_pose_xmat(agent_xmat, helper_xmat)
         # print(helper_pose)
 
+        # enable if predator being used
+        # combined_action = np.concatenate((action, helper_action, predator_action))
 
         combined_action = np.concatenate((action, helper_action))
         self.do_simulation(combined_action*30,  self.frame_skip)
@@ -482,11 +538,18 @@ class SurvivalEnv(MujocoEnv, utils.EzPickle):
         self.respawn_robot()
         self.respawn_all_food()
 
+        # self.helper_food_eaten_test_start()
+        # self.predator_test_start()
+
         # self.movement_avoidance_test()
         # self.movement_avoidance_test2()
         # self.movement_avoidance_test3()
         # self.collision_test_start()
-        # self.helper.reset()
+
+        self.helper.reset()
+
+        # Predator Resets, enable if predator used
+        # self.predator.reset()
 
         self._steps = 0
         self._done = False
