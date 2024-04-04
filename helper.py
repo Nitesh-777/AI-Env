@@ -1,65 +1,48 @@
+from env_agent import EnvAgent
 import numpy as np
-from movement_avoidance import attract, repulse, resultant, angle_to_wheel
 from transform_pose import dist_qpos
 
-
-class Helper(object):
+class Helper(EnvAgent):
     def __init__(self, food_name):
+        super().__init__("Hroot")
+        self.food_name = food_name
         self.helper_state = "helping"
         self.current_wait_steps = 0
-        self.food_placed = False
-        self.food_name = food_name
+        self.food_given = False
 
-    def get_action(self, data, wait_pos, max_wait_steps):
+    def get_action(self, data, wait_pos, max_wait_steps, goal_dist, food_range):
+
+        self.food_eaten(data)
 
         learner_qpos = self.get_learner_qpos(data)
-        goal_qpos = dist_qpos(learner_qpos, 1)
-
+        # Changed goal_qpos dist to 0.5 for food_eaten test, originally 1
+        goal_qpos = dist_qpos(learner_qpos, goal_dist)
+        print(f"Current State: {self.helper_state}")
         print(f"{self.current_wait_steps} / {max_wait_steps} Wait Steps")
 
         if self.helper_state == "helping":
-            placed = self.place_food(data, goal_qpos)
+            placed = self.place_food(data, goal_qpos, food_range)
             if placed:
+                print("placed")
                 self.helper_state = "waiting"
-                self.food_placed = True
+                self.food_given = True
                 return np.array([0, 0])
             else:
+                print("not placed")
                 self.carry_food(data)
                 return self.move_to_goal(data, goal_qpos, 2.0)
         elif self.helper_state == "waiting":
             if self.current_wait_steps >= max_wait_steps:
                 self.helper_state = "helping"
                 self.current_wait_steps = 0
-                self.food_placed = False
+                self.food_given = False
                 return np.array([0, 0])
             else:
                 self.current_wait_steps += 1
                 return self.wait(data, wait_pos)
 
-    def move_to_goal(self, data, goal_qpos, max_dist, intensity=1.0):
-        obstacles_qpos = self.get_obstacles_qpos(data)
-        helper_qpos = self.get_helper_qpos(data)
-        attract_angle = attract(helper_qpos, goal_qpos)
-        comb_repulse_vector = np.array([0.0, 0.0])
-
-        for obstacle_qpos in obstacles_qpos:
-            repulse_angle, repulse_magnitude = repulse(helper_qpos, obstacle_qpos, max_dist, intensity)
-            repulse_vector = np.array(
-                [np.cos(repulse_angle) * repulse_magnitude, np.sin(repulse_angle) * repulse_magnitude])
-            comb_repulse_vector += repulse_vector
-
-        if np.linalg.norm(comb_repulse_vector) > 0:
-            comb_repulse_angle = np.arctan2(comb_repulse_vector[1], comb_repulse_vector[0])
-        else:
-            comb_repulse_angle = attract_angle
-
-        resultant_angle = resultant(attract_angle, comb_repulse_angle, np.linalg.norm(comb_repulse_vector))
-        wheel_actions = angle_to_wheel(resultant_angle, threshold=np.radians(30))
-
-        return wheel_actions
-
     def carry_food(self, data):
-        helper_qpos = self.get_helper_qpos(data)
+        helper_qpos = self.get_self_qpos(data)
         food_helper_qpos = dist_qpos(helper_qpos, 0.8)
         food_helper_qpos[2] = 0.75
         self.set_food_qpos(data, self.food_name, food_helper_qpos)
@@ -70,13 +53,14 @@ class Helper(object):
         in_range = lower_left[0] <= current_qpos[0] <= upper_right[0] and lower_left[1] <= current_qpos[1] <= upper_right[1]
         return in_range
 
-    def place_food(self, data, goal_qpos):
+    def place_food(self, data, goal_qpos, food_range):
         food_qpos = self.get_food_qpos(data)
-        in_range = self.in_range(food_qpos, goal_qpos, 0.25)
+        # place food changed for food_eaten test to 0, originally 0.25
+        in_range = self.in_range(food_qpos, goal_qpos, food_range)
         return in_range
 
     def wait(self, data, wait_pos):
-        helper_qpos = self.get_helper_qpos(data)
+        helper_qpos = self.get_self_qpos(data)
         wait_qpos = np.copy(helper_qpos)
         wait_qpos[:2] = wait_pos
         action = self.move_to_goal(data, wait_qpos, 1)
@@ -85,11 +69,15 @@ class Helper(object):
         else:
             return action
 
-    def get_helper_qpos(self, data):
-        return data.joint('Hroot').qpos
-
-    def get_learner_qpos(self, data):
-        return data.joint('root').qpos
+    def food_eaten(self, data):
+        for contact in data.contact:
+            geom1_name = data.geom(contact.geom1).name
+            geom2_name = data.geom(contact.geom2).name
+            if ('beak' in geom1_name + geom2_name) and ("food_geom_11" in geom1_name + geom2_name):
+                self.food_given = True
+                break
+        if self.food_given:
+            self.helper_state = "waiting"
 
     def get_food_qpos(self, data):
         return data.joint(self.food_name).qpos
@@ -98,16 +86,18 @@ class Helper(object):
         data.joint(food_name).qpos = qpos
 
     def get_obstacles_qpos(self, data):
-        obstacles_qpos = []
-        for i in range(1, 11):
-            food = 'food_free_' + str(i)
-            obstacles_qpos.append(data.joint(food).qpos)
-        if self.food_placed:
+        obstacles_qpos = super().get_obstacles_qpos(data)
+        if self.food_given:
             obstacles_qpos.append(data.joint("food_free_11").qpos)
 
+        if self.helper_state == "waiting":
+            learner_qpos = self.get_learner_qpos(data)
+            obstacles_qpos.append(learner_qpos)
+
         return obstacles_qpos
+
 
     def reset(self):
         self.helper_state = "helping"
         self.current_wait_steps = 0
-        self.food_placed = False
+        self.food_given = False
