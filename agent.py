@@ -48,7 +48,7 @@ n_actions = env.action_space.shape[-1]
 action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
 
 aspace = copy.deepcopy(env.action_space)
-env.action_space = spaces.Box(low=env.action_space.low[:-2], high=env.action_space.high[:-2], dtype=np.float32)
+env.action_space = spaces.Box(low=env.action_space.low[:2], high=env.action_space.high[:2], dtype=np.float32)
 
 
 if MODEL_TYPE == "DDPG":
